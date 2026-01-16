@@ -162,7 +162,8 @@ public class OAuthServiceImpl {
 		try {
 			LoginHistory loginHistory = new LoginHistory();
 			loginHistory.setEmail(user.getEmail());
-			loginHistory.setDeviceId("WINDOW");
+//			loginHistory.setDeviceId("WINDOW");
+			loginHistory.setDeviceId(request.getHeader("User-Agent"));
 			loginHistory.setLoginTime(Instant.now());
 			loginHistory.setIpAddress(requestUtils.generateIpAddress(request));
 			loginHistory.setUserAgent(requestUtils.generateUserAgent(request));
@@ -245,4 +246,45 @@ public class OAuthServiceImpl {
 
 	}
 
+	
+	
+	/** OAuth2 Logic for Implementation **/
+	public UserDetailsEntity processOAuthPostLogin(String email, String name) {
+
+        return userRepo.findByEmail(email)
+                .orElseGet(() -> {
+                	
+                	UserDetailsEntity user = new UserDetailsEntity();
+    				user.setEmail(email);
+    				if (name != null) {
+    					user.setUserName(name);
+    				} else {
+    					user.setUserName("GUEST_USER_GOOGLE");
+    				}
+    				user.setMobileNo("9555577779");
+    				user.setPassword(encoder.encode("password"));
+    				user.setActiveFlag(true);
+    				user.setCreatedOn(LocalDateTime.now());
+    				user.setUpdatedOn(LocalDateTime.now());
+    				user.setGoogleOauthLogin(true);
+    				 user.setAuthProvider("GOOGLE");
+    				userRepo.save(user);
+
+    				MasterRoleEntity roles = masterRole.findByRoleName("USER")
+    						.orElseThrow(() -> new RuntimeException("Role USER not found"));
+
+    				UserVsRolesId userRoleId = new UserVsRolesId(user.getUserId(), roles.getRoleId());
+
+    				UserVsRolesEntity userVsRole = new UserVsRolesEntity();
+    				userVsRole.setId(userRoleId);
+    				userVsRole.setRole(roles);
+    				userVsRole.setActiveFlag(true);
+    				userVsRoleRepo.save(userVsRole);
+    				return user;
+                });
+    }
+	
+	
+	
+	
 }

@@ -20,42 +20,49 @@ import com.example.OAuth2InSpringBoot.ServiceImpl.CustomUserDetailsService;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+	@Autowired private PasswordEncoder passwordEncoder;
     @Autowired private JwtAuthFilter jwtFilter;
     @Autowired private CustomUserDetailsService userDetailsService;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        return new BCryptPasswordEncoder();
+//    }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
 
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
 
         return provider;
     }
 
-    @Bean
+	@Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+    		OAuth2SuccessHandler oAuth2SuccessHandler,OAuth2LogoutSuccessHandler oAuth2LogoutSuccessHandler
+    		) throws Exception {
 
         http.csrf(csrf -> csrf.disable())
         	.sessionManagement(session ->session
         		.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/oauth/google/**").permitAll()
                 .requestMatchers("/api/test/**").hasAnyRole("USER","ADMIN")
-//                .anyRequest().authenticated()
-                	.anyRequest().permitAll()
+                .anyRequest().authenticated()
+//                	.anyRequest().permitAll()
             )
+            .oauth2Login(oauth -> oauth.successHandler(oAuth2SuccessHandler) )
+            .logout(logout -> logout.logoutUrl("/oauth/google/logout")
+                    .logoutSuccessHandler(oAuth2LogoutSuccessHandler) )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

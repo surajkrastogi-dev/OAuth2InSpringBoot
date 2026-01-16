@@ -220,7 +220,7 @@ public class UserServiceImpl {
 		return true;
 	}
 	
-	
+
 /** Others Logic **/	
 	public static void copyNonNullProperties(Object src, Object target) {
 		BeanUtils.copyProperties(src, target, getNullPropertyNames(src));
@@ -240,4 +240,6 @@ public class UserServiceImpl {
 		return emptyNames.toArray(result);
 	}
 
+	
+	
 }

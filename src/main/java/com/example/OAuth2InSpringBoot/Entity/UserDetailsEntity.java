@@ -64,6 +64,9 @@ public class UserDetailsEntity {
     @Column(name="is_google_oauth_login")
     private boolean isGoogleOauthLogin;
     
+    @Column(name="auth_provider")
+    private String authProvider;
+    
 //    @Column(name = "role", length = 20)
 //    private String role; // ADMIN or USER
 
@@ -217,6 +220,14 @@ public class UserDetailsEntity {
 
 	public void setGoogleOauthLogin(boolean isGoogleOauthLogin) {
 		this.isGoogleOauthLogin = isGoogleOauthLogin;
+	}
+	
+	public String getAuthProvider() {
+		return authProvider;
+	}
+
+	public void setAuthProvider(String authProvider) {
+		this.authProvider = authProvider;
 	}
 
 	@Override
