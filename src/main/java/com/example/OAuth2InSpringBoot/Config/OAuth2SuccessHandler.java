@@ -1,6 +1,8 @@
 package com.example.OAuth2InSpringBoot.Config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -11,6 +13,9 @@ import com.example.OAuth2InSpringBoot.Model.TokenResponse;
 import com.example.OAuth2InSpringBoot.ServiceImpl.OAuthServiceImpl;
 
 import java.io.IOException;
+import java.time.Duration;
+
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -35,16 +40,37 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 		TokenResponse tokenResponse = oAuthServiceImpl.oauthGoogleLogin(user, request);
 		
 		
+		//send refreshToken in Http Secure Cookies
+		Cookie cookie = new Cookie("refreshToken", tokenResponse.getRefreshToken());
+		cookie.setHttpOnly(true); //JS access nahi kar sakta
+		cookie.setSecure(true);//HTTPS required
+		cookie.setPath("/");//har endpoint pe accessible
+		cookie.setMaxAge(7*24*60*60); //7days
+		
+		response.addCookie(cookie);
+		/**Java Cookie me SameSite directly set nahi hota properly. use ResponseCookie **/
+		
+		//Another way of adding cookie in API Response
+		/**
+		ResponseCookie responseCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
+				.httpOnly(true)
+				.secure(true)
+				.path("/")
+				.maxAge(Duration.ofDays(7))
+				.sameSite("Lax") //"Strict"-> max secure and "Lax"-> OAuth redirects me thoda easier
+				.build();
+		
+		response.addHeader(HttpHeaders.SET_COOKIE,responseCookie.toString());
+		**/
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
         response.getWriter().write(
                 """
                 {
                   "accessToken": "%s",
-                  "refreshToken": "%s",
                   "message": "OAuth Login Successful"
                 }
-                """.formatted(tokenResponse.getAccessToken(), tokenResponse.getRefreshToken())
+                """.formatted(tokenResponse.getAccessToken())
         );
 		
 	}

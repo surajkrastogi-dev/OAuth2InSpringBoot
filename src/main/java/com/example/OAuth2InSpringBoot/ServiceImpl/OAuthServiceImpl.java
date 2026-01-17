@@ -135,7 +135,8 @@ public class OAuthServiceImpl {
 				}
 
 				// create or register UserDetails into the DB
-				UserDetailsEntity user = createorRegisterUserDetailsWithOAuth(userName, userEmail);
+//				UserDetailsEntity user = createorRegisterUserDetailsWithOAuth(userName, userEmail);
+				UserDetailsEntity user = processOAuthPostLogin(userEmail,userName);
 
 				// loginUser with OAuth Google
 				TokenResponse tokenResponse = oauthGoogleLogin(user, request);
@@ -206,37 +207,44 @@ public class OAuthServiceImpl {
 	public UserDetailsEntity createorRegisterUserDetailsWithOAuth(String userName, String userEmail) {
 		try {
 			if (userEmail != null) {
-				// check for UserEmail Already exist
-				if (userRepo.existsByEmail(userEmail)) {
-					throw new RuntimeException("UserName already Exists " + userEmail);
-				}
-				UserDetailsEntity user = new UserDetailsEntity();
-				user.setEmail(userEmail);
-				if (userName != null) {
-					user.setUserName(userName);
-				} else {
-					user.setUserName("GUEST_USER_GOOGLE");
-				}
-				user.setMobileNo("9555577779");
-				user.setPassword(encoder.encode("password"));
-				user.setActiveFlag(true);
-				user.setCreatedOn(LocalDateTime.now());
-				user.setUpdatedOn(LocalDateTime.now());
-				user.setGoogleOauthLogin(true);
-				userRepo.save(user);
 
-				MasterRoleEntity roles = masterRole.findByRoleName("USER")
-						.orElseThrow(() -> new RuntimeException("Role USER not found"));
+//				if (userRepo.existsByEmail(userEmail)) {
+//					throw new RuntimeException("UserName already Exists " + userEmail);
+//				}
+				
+				// check for UserEmail and create or update user
+				return userRepo.findByEmail(userEmail)
+		                .orElseGet(() -> {
+		                	UserDetailsEntity user = new UserDetailsEntity();
+		    				user.setEmail(userEmail);
+		    				if (userName != null) {
+		    					user.setUserName(userName);
+		    				} else {
+		    					user.setUserName("GUEST_USER_GOOGLE");
+		    				}
+		    				user.setMobileNo("9555577779");
+		    				user.setPassword(encoder.encode("password"));
+		    				user.setActiveFlag(true);
+		    				user.setCreatedOn(LocalDateTime.now());
+		    				user.setUpdatedOn(LocalDateTime.now());
+		    				user.setGoogleOauthLogin(true);
+		    				userRepo.save(user);
 
-				UserVsRolesId userRoleId = new UserVsRolesId(user.getUserId(), roles.getRoleId());
+		    				MasterRoleEntity roles = masterRole.findByRoleName("USER")
+		    						.orElseThrow(() -> new RuntimeException("Role USER not found"));
 
-				UserVsRolesEntity userVsRole = new UserVsRolesEntity();
-				userVsRole.setId(userRoleId);
-				userVsRole.setRole(roles);
-				userVsRole.setActiveFlag(true);
-				userVsRoleRepo.save(userVsRole);
+		    				UserVsRolesId userRoleId = new UserVsRolesId(user.getUserId(), roles.getRoleId());
 
-				return user;
+		    				UserVsRolesEntity userVsRole = new UserVsRolesEntity();
+		    				userVsRole.setId(userRoleId);
+		    				userVsRole.setRole(roles);
+		    				userVsRole.setActiveFlag(true);
+		    				userVsRoleRepo.save(userVsRole);
+
+		    				return user;
+
+		                });
+				
 			}
 			return null;
 		} catch (Exception e) {

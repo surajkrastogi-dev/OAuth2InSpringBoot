@@ -82,5 +82,21 @@ public class RefreshTokenService {
 		return createRToken(existingToken.getEmail(), existingToken.getDeviceId(), request);
 
 	}
+	
+	
+	//new refreshToken Logic for verify it from DB 
+	public RefreshToken verifyRefreshToken(String token) {
+		
+		RefreshToken refreshToken = repo.findByToken(token)
+	            .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+
+	    if (refreshToken.getExpiryDate().isBefore(Instant.now())) {
+	    	refreshToken.setRevoked(true);
+//	    	repo.delete(refreshToken);
+	        throw new RuntimeException("Refresh token expired");
+	    }
+	    return refreshToken;
+	}
+	
 
 }
